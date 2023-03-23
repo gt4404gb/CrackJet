@@ -1,0 +1,9 @@
+bs4
+lxml
+requests
+simplejson
+numpy
+pandas
+openpyxl
+tqdm
+treelib
