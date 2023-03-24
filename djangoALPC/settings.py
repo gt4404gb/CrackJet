@@ -122,3 +122,10 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/4.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# 使用 Redis 作为中间人和结果存储
+CELERY_BROKER_URL = 'redis://127.0.0.1:6379/0'
+CELERY_RESULT_BACKEND = 'redis://127.0.0.1:6379/0'
+
+# 定义异步任务的超时时间（单位为秒）
+CELERY_TASK_TIME_LIMIT = 3600  # 1小时

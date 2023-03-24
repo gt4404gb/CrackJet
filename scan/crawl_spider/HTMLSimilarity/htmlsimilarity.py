@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
 
-from crawl_spider.HTMLSimilarity.htmlparser import HTMLParser
-from crawl_spider.HTMLSimilarity.domtree2data import Converter
-from crawl_spider.HTMLSimilarity.calc import calculated_similarity
+from scan.crawl_spider.HTMLSimilarity.htmlparser import HTMLParser
+from scan.crawl_spider.HTMLSimilarity.domtree2data import Converter
+from scan.crawl_spider.HTMLSimilarity.calc import calculated_similarity
 
 
 def get_html_similarity(html_doc1, html_doc2, dimension=5000):

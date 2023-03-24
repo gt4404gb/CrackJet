@@ -1,9 +1,12 @@
-from crawl_spider import judge
-from auto_login import webcrack
+from scan.crawl_spider import judge
+from scan.auto_login import webcrack
+import asyncio
+from celery_main import app
 from input_format import txt_excel
 import logs.log as Log
 import sys
 
+@app.task
 def checkRun(url):
     #假设传过来的是一个单个url站点
     try:
@@ -15,4 +18,4 @@ def checkRun(url):
         return username,password
     except Exception as e:
         print(e)
-        return 0
+        return "error",""

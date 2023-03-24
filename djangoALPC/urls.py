@@ -23,4 +23,6 @@ urlpatterns = [
     path('scan_websites', views.scan_websites, name='scan_websites'),
     path('hello/', views.hello, name='hello'),
     path('admin/', admin.site.urls),
+    path('start_scan/', views.start_scan, name='start_scan'),
+    path('get_scan_result/', views.get_scan_result, name='get_scan_result'),
 ]

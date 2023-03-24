@@ -1,6 +1,10 @@
 from django.db import models
 
 # Create your models here.
+class TaskInfo(models.Model):
+    id = models.AutoField(primary_key=True)
+    task = models.CharField(max_length=50)
+
 class Project(models.Model):
     ID = models.IntegerField(primary_key=True, verbose_name='项目ID（唯一值）')
     status = models.IntegerField(null=True, verbose_name='项目运行状态')

@@ -68,3 +68,6 @@ python3 main.py url.txt
 ## 警告！
 
 **请勿用于非法用途！否则自行承担一切后果**
+
+----
+先在根目录执行celery -A celery_main worker -l info -P eventlet
