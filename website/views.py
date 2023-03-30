@@ -11,6 +11,10 @@ import asyncio
 from django.contrib.auth import authenticate, login
 from django.contrib.auth.forms import UserCreationForm
 from django.shortcuts import render, redirect
+from django.views.generic import View
+from django.views.decorators.csrf import csrf_exempt
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.mixins import LoginRequiredMixin
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'scan')))
 from scan.checkRun import checkRun
@@ -49,9 +53,8 @@ def register_view(request):
     return render(request, 'register.html', {'form': form})
 
 
-@csrf_exempt
-def start_scan(request):
-    if request.method == 'GET':
+class start_scan(LoginRequiredMixin,View):
+    def get(self,request):
         website = request.GET.get('website')
         # 异步启动扫描任务
         result = checkRun.delay(website)
@@ -59,9 +62,8 @@ def start_scan(request):
         # 返回任务 ID 给客户端
         return JsonResponse({'task_id': result.id})
 
-@csrf_exempt
-def get_scan_result(request):
-    if request.method == 'GET':
+class get_scan_result(LoginRequiredMixin,View):
+    def get(self,request):
         task_id = request.GET.get('task_id')
 
         # 获取任务执行结果
@@ -75,3 +77,16 @@ def get_scan_result(request):
         else:
             # 如果任务尚未完成，则返回等待消息
             return JsonResponse({'status': 'waiting'})
+
+
+'''
+class start_scan(View):
+    def get(self,request):
+        website = request.GET.get('website')
+        # 异步启动扫描任务
+        result = checkRun.delay(website)
+
+        # 返回任务 ID 给客户端
+        return JsonResponse({'task_id': result.id})
+        return render(request, 'userapp/user_center.html')
+'''
