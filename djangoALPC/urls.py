@@ -24,6 +24,7 @@ urlpatterns = [
     path('hello/', views.hello, name='hello'),
     path('accounts/login/', views.login_view, name='login'),
     path('accounts/register/', views.register_view, name='register'),
+    path('accounts/logout/', views.logout_View.as_view(), name='logout'),
     path('admin/', admin.site.urls),
     path('start_scan/',  views.start_scan.as_view(), name='start_scan'),
     path('get_scan_result/', views.get_scan_result.as_view(), name='get_scan_result'),

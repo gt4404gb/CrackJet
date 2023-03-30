@@ -52,6 +52,17 @@ def register_view(request):
         form = UserCreationForm()
     return render(request, 'register.html', {'form': form})
 
+class logout_View(LoginRequiredMixin, View):
+    def get(self, request):
+        # 清理session（redis中的会话，请求对象cookie中的sessionid）-request.session.flush()
+         #logout(request=request)
+        response = JsonResponse({
+            'errmsg': 'ok'
+        })
+        # 可以删除指定cookie
+        request.session.clear()
+        response.delete_cookie('value')
+        return response
 
 class start_scan(LoginRequiredMixin,View):
     def get(self,request):

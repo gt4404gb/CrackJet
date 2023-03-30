@@ -15,7 +15,11 @@ def checkRun(url):
         if resulturl != []:
             resulturl = list(set(resulturl))  # 列表去重
             username,password = webcrack.run_crack(resulturl)
-        return username,password
+        if username and password:
+            return username,password
+        else:
+            return "error",""
+
     except Exception as e:
         print(e)
         return "error",""
