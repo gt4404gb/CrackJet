@@ -3,7 +3,7 @@ import os
 from celery import Celery
 
 # 设置默认 Django 设置模块
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'djangoALPC.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'CrackJet.settings')
 
 app = Celery('JetCelery')
 
