@@ -8,26 +8,45 @@ import os
 import sys
 from django.http import HttpResponse
 import asyncio
+from django.contrib.auth import authenticate, login
+from django.contrib.auth.forms import UserCreationForm
+from django.shortcuts import render, redirect
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'scan')))
 from scan.checkRun import checkRun
 
+
 def hello(request):
     return HttpResponse("Hello world ! ")
 
-#@csrf_exempt
-def scan_websites(request):
+
+def login_view(request):
     if request.method == 'POST':
-        data = json.loads(request.body)
-        websites = data['websites']
-        result = checkRun(websites)
-        return JsonResponse({'result': result})
-    elif request.method == 'GET':
-        website = request.GET.get('website')
-        username, password = checkRun(website)
-        return JsonResponse({'username': username, 'password': password})
+        username = request.POST['username']
+        password = request.POST['password']
+        user = authenticate(request, username=username, password=password)
+        if user is not None:
+            login(request, user)
+            return redirect('/')
+        else:
+            return render(request, 'login.html', {'error': 'Invalid username or password.'})
     else:
-        return JsonResponse({'error': 'Invalid request method'})
+        return render(request, 'login.html')
+
+
+def register_view(request):
+    if request.method == 'POST':
+        form = UserCreationForm(request.POST)
+        if form.is_valid():
+            form.save()
+            username = form.cleaned_data.get('username')
+            raw_password = form.cleaned_data.get('password1')
+            user = authenticate(username=username, password=raw_password)
+            login(request, user)
+            return redirect('/')
+    else:
+        form = UserCreationForm()
+    return render(request, 'register.html', {'form': form})
 
 
 @csrf_exempt

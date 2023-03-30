@@ -70,4 +70,10 @@ python3 main.py url.txt
 **请勿用于非法用途！否则自行承担一切后果**
 
 ----
-先在根目录执行celery -A celery_main worker -l info -P eventlet
+新增使用步骤：
+1、初始化数据表：
+`python manage.py makemigrations （生成迁移文件）
+sudo python manage.py migrate （更新数据库，完成迁移）`
+2、在根目录执行
+`celery -A celery_main worker -l info -P eventlet`
+创建异步服务器
