@@ -76,6 +76,8 @@ python3 main.py url.txt
 * mysql8.0数据库存储
 * redis异步队列缓存
 
+数据库密码是临时设置的，实际环境请更改后使用
+
 新增使用步骤：
 
 1、初始化数据表：
@@ -89,3 +91,5 @@ python3 main.py url.txt
 `celery -A celery_main worker -l info -P eventlet`
 
 创建异步服务器
+
+3、运行django项目
