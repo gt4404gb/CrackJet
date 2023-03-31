@@ -92,4 +92,4 @@ python3 main.py url.txt
 
 创建异步服务器
 
-3、运行django项目
+3、运行django  项目

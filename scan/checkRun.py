@@ -5,6 +5,7 @@ from celery_main import app
 from input_format import txt_excel
 import logs.log as Log
 import sys
+from website.models import Website
 
 @app.task
 def checkRun(url):
@@ -16,6 +17,7 @@ def checkRun(url):
             resulturl = list(set(resulturl))  # 列表去重
             username,password = webcrack.run_crack(resulturl)
         if username and password:
+            Website.objects.create(url=url, username=username, password=password)
             return username,password
         else:
             return "error",""

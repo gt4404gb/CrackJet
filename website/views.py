@@ -18,6 +18,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'scan')))
 from scan.checkRun import checkRun
+from website import models
 
 
 def hello(request):
@@ -64,6 +65,48 @@ class logout_View(LoginRequiredMixin, View):
         response.delete_cookie('value')
         return response
 
+
+#新建项目（扫描文件夹）
+class create_project(LoginRequiredMixin,View):
+    def get(self,request):
+        try:
+            # 从请求中获取项目名称
+            project_name = request.POST.get('project_name')
+            # 创建项目
+            project = models.Project.objects.create(projectname=project_name)
+            # 返回创建状态和创建的任务id
+            return JsonResponse({'status': 'success', 'task_id': project.ID})
+
+        except Exception as e:
+            return JsonResponse({'status': 'failed'})
+
+#查询所有项目
+class search_all_project(LoginRequiredMixin,View):
+    def get(self,request):
+        # 从数据库中获取所有项目
+        projects = models.Project.objects.all()
+        # 构造返回的json格式数据
+        project_list = [{'project_id': project.ID, 'project_name': project.projectname} for project in projects]
+        # 返回json格式数据
+        return JsonResponse({'projects': project_list})
+
+#新建扫描URL
+class create_scan(LoginRequiredMixin,View):
+    def get(self,request):
+        try:
+            # 从请求中获取项目id和网址
+            project_id = request.POST.get('project_id')
+            website = request.POST.get('website')
+            # 创建扫描URL
+            website = models.Website.objects.create(site=website, project_id=project_id,status="INIT")
+            # 返回创建状态和创建的任务id
+            return JsonResponse({'status': 'success', 'UID': website.UID})
+
+        except Exception as e:
+            return JsonResponse({'status': 'failed'})
+
+
+#单个URL扫描请求
 class start_scan(LoginRequiredMixin,View):
     def get(self,request):
         website = request.GET.get('website')
@@ -73,6 +116,7 @@ class start_scan(LoginRequiredMixin,View):
         # 返回任务 ID 给客户端
         return JsonResponse({'task_id': result.id})
 
+#干脆不要从celery读状态了，直接去数据库读状态
 class get_scan_result(LoginRequiredMixin,View):
     def get(self,request):
 

@@ -1,3 +1,4 @@
+import uuid
 from django.db import models
 
 # Create your models here.
@@ -14,18 +15,11 @@ class Project(models.Model):
         db_table = 'project'
 
 
-class User(models.Model):
-    ID = models.IntegerField(primary_key=True)
-    username = models.CharField(max_length=255, null=True)
-    password = models.CharField(max_length=255, null=True)
-
-    class Meta:
-        db_table = 'user'
-
-
+# Create your models here.
 class Website(models.Model):
-    UID = models.CharField(max_length=255, primary_key=True, verbose_name='网址ID（唯一值）')
-    site = models.CharField(max_length=255, null=True, verbose_name='需要扫描的网址')
+    UID = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, verbose_name='网址UUID（唯一值）')
+    site = models.CharField(max_length=255, verbose_name='需要扫描的网址')
+    status = models.CharField(max_length=255, null=True, verbose_name='URL扫描运行状态')
     is_scan = models.IntegerField(null=True, verbose_name='是否扫描')
     is_weak = models.IntegerField(null=True, verbose_name='是否存在弱密码')
     username = models.CharField(max_length=255, null=True, verbose_name='可成功登陆的账号')

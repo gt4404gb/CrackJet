@@ -26,6 +26,9 @@ urlpatterns = [
     path('accounts/register/', views.register_view, name='register'),
     path('accounts/logout/', views.logout_View.as_view(), name='logout'),
     path('admin/', admin.site.urls),
-    path('start_scan/',  views.start_scan.as_view(), name='start_scan'),
-    path('get_scan_result/', views.get_scan_result.as_view(), name='get_scan_result'),
+    path('crackjet/start_scan/',  views.start_scan.as_view(), name='start_scan'),
+    path('crackjet/get_scan_result/', views.get_scan_result.as_view(), name='get_scan_result'),
+    path('crackjet/create_project/', views.create_project.as_view(), name='create_project'),
+    path('crackjet/search_all_project/', views.search_all_project.as_view(), name='search_all_project'),
+    path('crackjet/create_scan/', views.create_scan.as_view(), name='create_scan'),
 ]

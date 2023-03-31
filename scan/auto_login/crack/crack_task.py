@@ -4,7 +4,7 @@ import sys
 from scan.auto_login.generator.dict import *
 from scan.auto_login.generator.header import get_random_headers
 from scan.auto_login.conf.config import *
-import scan.logs.log as Log
+from scan.logs import log as Log
 from scan.auto_login.parse.parser import Parser
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 
