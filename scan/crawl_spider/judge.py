@@ -1,7 +1,7 @@
 ﻿#-*-coding:utf-8 -*-
 import requests
 from bs4 import BeautifulSoup
-import scan.common_config as common_config
+import common_config as common_config
 from scan.crawl_spider import crawlergo
 import scan.logs.log as Log
 import scan.crawl_spider.HTMLSimilarity.htmlsimilarity as htmlsimilarity

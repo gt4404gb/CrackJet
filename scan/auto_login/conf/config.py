@@ -1,5 +1,5 @@
 import os
-import scan.common_config as common_config
+import common_config as common_config
 
 def txt2list(txt):
     ret = []

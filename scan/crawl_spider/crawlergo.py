@@ -2,7 +2,7 @@
 import simplejson
 import subprocess
 import scan.logs.log as Log
-import scan.common_config as common_config
+import common_config as common_config
 
 def crawlergo(target):
     try:

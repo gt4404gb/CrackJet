@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/4.1/ref/settings/
 """
 
 from pathlib import Path
+import common_config as config
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -74,14 +75,25 @@ WSGI_APPLICATION = 'CrackJet.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/4.1/ref/settings/#databases
-
+'''
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
+'''
 
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': config.DATABASESConfig['NAME'],
+        'HOST': config.DATABASESConfig['HOST'],
+        'PORT': config.DATABASESConfig['PORT'],
+        'USER': config.DATABASESConfig['USER'],
+        'PASSWORD': config.DATABASESConfig['PASSWORD'],
+    },
+}
 
 # Password validation
 # https://docs.djangoproject.com/en/4.1/ref/settings/#auth-password-validators
@@ -125,8 +137,8 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # 使用 Redis 作为中间人和结果存储
-CELERY_BROKER_URL = 'redis://127.0.0.1:6379/0'
-CELERY_RESULT_BACKEND = 'redis://127.0.0.1:6379/0'
+CELERY_BROKER_URL = config.CELERY_BROKER_URL
+CELERY_RESULT_BACKEND = config.CELERY_RESULT_BACKEND
 
 # 定义异步任务的超时时间（单位为秒）
 CELERY_TASK_TIME_LIMIT = 3600  # 1小时

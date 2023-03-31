@@ -11,3 +11,5 @@ django
 celery
 redis
 eventlet
+django-celery-results
+mysqlclient

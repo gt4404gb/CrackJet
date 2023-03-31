@@ -13,7 +13,7 @@ from django.contrib.auth.forms import UserCreationForm
 from django.shortcuts import render, redirect
 from django.views.generic import View
 from django.views.decorators.csrf import csrf_exempt
-from django.contrib.auth.decorators import login_required
+from django.core.cache import cache
 from django.contrib.auth.mixins import LoginRequiredMixin
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'scan')))
@@ -76,28 +76,27 @@ class start_scan(LoginRequiredMixin,View):
 class get_scan_result(LoginRequiredMixin,View):
     def get(self,request):
         task_id = request.GET.get('task_id')
-
-        # 获取任务执行结果
-        result = checkRun.AsyncResult(task_id)
-
-        if result.successful():
-            # 如果任务成功完成，则返回 username 和 password 参数
-            username, password = result.get()
-            return JsonResponse({'username': username, 'password': password})
-            #如果返回error,''则证明爆破失败
+        if task_id is not None:
+            # 获取任务执行结果
+            task = checkRun.AsyncResult(task_id)
+            status = task.state
+            if status == 'SUCCESS':
+                # 如果任务成功完成，则返回 username 和 password 参数
+                username, password = task.get()
+                return JsonResponse({'status': status,'username': username, 'password': password})
+                #如果返回error,''则证明爆破失败
+            else:
+                # 如果任务尚未完成，则返回等待消息
+                return JsonResponse({'status': status})
         else:
-            # 如果任务尚未完成，则返回等待消息
-            return JsonResponse({'status': 'waiting'})
+            return JsonResponse({'error': 'task_id is required'})
 
-
-'''
-class start_scan(View):
-    def get(self,request):
-        website = request.GET.get('website')
-        # 异步启动扫描任务
-        result = checkRun.delay(website)
-
-        # 返回任务 ID 给客户端
-        return JsonResponse({'task_id': result.id})
-        return render(request, 'userapp/user_center.html')
-'''
+        '''
+        status状态:
+        PENDING:等待
+        CRAWLING：正在执行页面爬取
+        CRACKING：正在执行页面爆破
+        FINISH：完成爆破，未得到结果
+        SUCCESS：爆破成功，附带账户名与密码
+        ERROR:出现错误
+        '''
