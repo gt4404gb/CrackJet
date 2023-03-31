@@ -99,14 +99,53 @@ class create_scan(LoginRequiredMixin,View):
             project_id = request.GET.get('project_id')
             website = request.GET.get('website')
             # 创建扫描URL
-            website = models.Website.objects.create(site=website, project_id=project_id,status="INIT")
+            task = models.Website.objects.create(site=website, project_id=project_id,status="INIT",is_scan=0,is_weak=0)
             # 返回创建状态和创建的任务id
-            return JsonResponse({'status': 'success', 'UID': website.UID})
+            # 将任务的数据库 id 作为参数传递给 Celery
+            celery_task = checkRun.apply_async(args=(website, task.UID))
+            # 将 Celery 生成的 taskid 保存到任务记录中
+            #print(celery_task.id)
+            #task.save()
+            # 返回任务 id
+
+            return JsonResponse({'status': 'success', 'UID': task.UID})
 
         except Exception as e:
+            print(e)
             return JsonResponse({'status': 'failed'})
 
 
+#在数据库中查询扫描状态
+class scan_status(LoginRequiredMixin,View):
+    def get(self, request):
+        task_id = request.GET.get('task_id')
+        # 获取任务执行结果
+        task = models.Website.objects.get(UID=task_id)
+        if task:
+            result = task.status
+            if result == "SUCCESS":
+                username = task.username
+                password = task.password
+                return JsonResponse({'status': result,'username': username, 'password': password})
+                #如果返回error,''则证明爆破失败
+            elif result == "FINISH":
+                return JsonResponse({'status': result})
+            else:
+                return JsonResponse({'status': result})
+        else:
+            return JsonResponse({'error': 'task_id is invalid'})
+
+#查询数据库中project所有的webstie记录
+class search_all_website(LoginRequiredMixin,View):
+    def get(self,request):
+        # 从请求中获取项目id
+        project_id = request.GET.get('project_id')
+        # 从数据库中获取该项目下的所有网址
+        websites = models.Website.objects.filter(project_id=project_id)
+        # 构造返回的json格式数据
+        website_list = [{'UID': website.UID, 'site': website.site, 'status': website.status, 'is_scan': website.is_scan, 'is_weak': website.is_weak} for website in websites]
+        return JsonResponse({'websites': website_list})
+            
 #单个URL扫描请求
 class start_scan(LoginRequiredMixin,View):
     def get(self,request):
