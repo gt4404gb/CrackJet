@@ -71,13 +71,14 @@ class create_project(LoginRequiredMixin,View):
     def get(self,request):
         try:
             # 从请求中获取项目名称
-            project_name = request.POST.get('project_name')
+            project_name = request.GET.get('project_name')
             # 创建项目
             project = models.Project.objects.create(projectname=project_name)
             # 返回创建状态和创建的任务id
             return JsonResponse({'status': 'success', 'task_id': project.ID})
 
         except Exception as e:
+            print(e)
             return JsonResponse({'status': 'failed'})
 
 #查询所有项目
@@ -95,8 +96,8 @@ class create_scan(LoginRequiredMixin,View):
     def get(self,request):
         try:
             # 从请求中获取项目id和网址
-            project_id = request.POST.get('project_id')
-            website = request.POST.get('website')
+            project_id = request.GET.get('project_id')
+            website = request.GET.get('website')
             # 创建扫描URL
             website = models.Website.objects.create(site=website, project_id=project_id,status="INIT")
             # 返回创建状态和创建的任务id
