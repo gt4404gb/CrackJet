@@ -45,7 +45,7 @@ class CrackTask:
         try:
             self.parser = Parser(self.url)
             if not self.parser.run():
-                return
+                return False,False
             self.error_length = self.get_error_length()
             username_dict, password_dict = gen_dict(url)
             username, password = self.crack_task(username_dict, password_dict)
@@ -69,9 +69,10 @@ class CrackTask:
                 else:
                     Log.Info(f"[-] Recheck failed: {url}  {username}/{password}")
             Log.Error("[-] Failed: " + url)
-            return False,False
+            return False, False
         except Exception as e:
             Log.Error(f"{str(e)}")
+            return False, False
 
     def crack_request(self, conn, username, password):
         data = self.parser.data

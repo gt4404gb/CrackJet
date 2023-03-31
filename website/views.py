@@ -75,28 +75,19 @@ class start_scan(LoginRequiredMixin,View):
 
 class get_scan_result(LoginRequiredMixin,View):
     def get(self,request):
+
         task_id = request.GET.get('task_id')
-        if task_id is not None:
-            # 获取任务执行结果
-            task = checkRun.AsyncResult(task_id)
-            status = task.state
-            if status == 'SUCCESS':
+
+        # 获取任务执行结果
+        result = checkRun.AsyncResult(task_id)
+        if result is not None:
+            if result.successful():
                 # 如果任务成功完成，则返回 username 和 password 参数
-                username, password = task.get()
-                return JsonResponse({'status': status,'username': username, 'password': password})
+                username, password = result.get()
+                return JsonResponse({'username': username, 'password': password})
                 #如果返回error,''则证明爆破失败
             else:
                 # 如果任务尚未完成，则返回等待消息
-                return JsonResponse({'status': status})
+                return JsonResponse({'status': 'waiting'})
         else:
             return JsonResponse({'error': 'task_id is required'})
-
-        '''
-        status状态:
-        PENDING:等待
-        CRAWLING：正在执行页面爬取
-        CRACKING：正在执行页面爆破
-        FINISH：完成爆破，未得到结果
-        SUCCESS：爆破成功，附带账户名与密码
-        ERROR:出现错误
-        '''
