@@ -2,12 +2,9 @@ from django.shortcuts import render
 
 # Create your views here.
 from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
-import json
 import os
 import sys
 from django.http import HttpResponse
-import asyncio
 from django.contrib.auth import authenticate, login
 from django.contrib.auth.forms import UserCreationForm
 from django.shortcuts import render, redirect
@@ -187,7 +184,7 @@ class logout_View(LoginRequiredMixin, APIView):
 
 
 #新建项目（扫描文件夹）
-class create_project(LoginRequiredMixin,APIView):
+class create_project(LoginRequiredMixin, APIView):
     @swagger_auto_schema(
         operation_description="新建项目（扫描文件夹）",
         manual_parameters=[
@@ -345,18 +342,17 @@ class create_scan_file(LoginRequiredMixin, APIView):
                 type=openapi.TYPE_STRING, required=True
             ),
             openapi.Parameter(
-                'file_path', openapi.IN_QUERY, description="txt文件路径",
+                'file', openapi.IN_QUERY, description="txt文件",
                 type=openapi.TYPE_STRING, required=True
             ),
         ],
         responses={
             200: openapi.Response(
-                description="查询结果",
+                description="上传结果",
                 schema=openapi.Schema(
                     type=openapi.TYPE_OBJECT,
                     properties={
-                        'status': openapi.Schema(type=openapi.TYPE_STRING, description="任务状态"),
-                        'UID': openapi.Schema(type=openapi.TYPE_STRING, description="任务ID")
+                        'status': openapi.Schema(type=openapi.TYPE_STRING, description="任务状态")
                     }
                 )
             ),
@@ -365,15 +361,20 @@ class create_scan_file(LoginRequiredMixin, APIView):
             404: "任务ID不存在",
         }
     )
-    def post(self,request):
+    def post(self, request):
         try:
             data = request.data
             # 从请求中获取项目id和txt文件路径
             project_id = data.get('project_id')
-            file_path = data.get('file_path')
-            # 读取txt文件中的URL
-            with open(file_path, 'r') as f:
-                urls = f.readlines()
+            # 从请求中获取上传的文件
+            uploaded_file = request.FILES.get('file')
+
+            # 读取 txt 文件中的内容
+            if uploaded_file.content_type == 'text/plain':
+                urls = uploaded_file.read().decode('utf-8').split('\n')
+            else:
+                raise ValueError('The uploaded file is not a txt file.')
+
             # 逐个创建扫描URL
             for url in urls:
                 # 创建扫描URL
