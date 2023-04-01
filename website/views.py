@@ -363,9 +363,8 @@ class create_scan_file(LoginRequiredMixin, APIView):
     )
     def post(self, request):
         try:
-            data = request.data
             # 从请求中获取项目id和txt文件路径
-            project_id = data.get('project_id')
+            project_id = request.GET.get('project_id')
             # 从请求中获取上传的文件
             uploaded_file = request.FILES.get('file')
 
