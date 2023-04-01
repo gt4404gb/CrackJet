@@ -1,6 +1,34 @@
-# 批量自动化弱口令检查工具
-基于企业内网繁杂的弱口令检测需求，
-缝合crawlergo爬虫+WebCrack项目而开发的一个批量自动化弱口令检查工具
+# CrackJet
+## 批量自动化弱口令检查工具
+
+----
+系统架构：
+* django后端
+* vue前端
+* mysql8.0数据库存储
+* redis异步队列缓存
+
+数据库密码是临时设置的，实际环境请更改后使用
+
+新增使用步骤：
+
+1、初始化数据表：
+
+`python manage.py makemigrations （生成迁移文件）`
+
+`sudo python manage.py migrate （更新数据库，完成迁移）`
+
+2、在根目录执行
+
+`celery -A celery_main worker -l info -P eventlet`
+
+创建异步服务器
+
+3、运行django  项目
+
+----
+
+基于企业内网繁杂的弱口令检测需求，缝合crawlergo爬虫+WebCrack项目而开发的一个批量自动化弱口令检查工具
 
 本项目基于
 [crawlergo](https://github.com/Qianlitp/crawlergo)
@@ -68,28 +96,3 @@ python3 main.py url.txt
 ## 警告！
 
 **请勿用于非法用途！否则自行承担一切后果**
-
-----
-系统架构：
-* django后端
-* vue前端
-* mysql8.0数据库存储
-* redis异步队列缓存
-
-数据库密码是临时设置的，实际环境请更改后使用
-
-新增使用步骤：
-
-1、初始化数据表：
-
-`python manage.py makemigrations （生成迁移文件）`
-
-`sudo python manage.py migrate （更新数据库，完成迁移）`
-
-2、在根目录执行
-
-`celery -A celery_main worker -l info -P eventlet`
-
-创建异步服务器
-
-3、运行django  项目
