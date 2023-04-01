@@ -14,3 +14,4 @@ eventlet
 django-celery-results
 mysqlclient
 drf-yasg2
+django-cors-headers

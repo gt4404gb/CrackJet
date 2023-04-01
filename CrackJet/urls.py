@@ -44,7 +44,9 @@ urlpatterns = [
     path('crackjet/search_all_project/', views.search_all_project.as_view(), name='search_all_project'),
     path('crackjet/search_all_website/', views.search_all_website.as_view(), name='search_all_website'),
     path('crackjet/create_scan/', views.create_scan.as_view(), name='create_scan'),
+    path('crackjet/create_scan_file/', views.create_scan_file.as_view(), name='create_scan_file'),
     path('crackjet/scan_status/', views.scan_status.as_view(), name='scan_status'),
+    path('crackjet/delete_website/', views.delete_website.as_view(), name='delete_website'),
 ]
 
 urlpatterns += [

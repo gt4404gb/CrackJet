@@ -38,12 +38,14 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'corsheaders',
     'rest_framework',
     'website',
     'drf_yasg',
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -54,6 +56,12 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = 'CrackJet.urls'
+
+REST_FRAMEWORK = {
+    'DEFAULT_RENDERER_CLASSES': [
+        'rest_framework.renderers.JSONRenderer',
+    ]
+}
 
 TEMPLATES = [
     {
@@ -145,6 +153,11 @@ CELERY_RESULT_BACKEND = config.CELERY_RESULT_BACKEND
 # 定义异步任务的超时时间（单位为秒）
 CELERY_TASK_TIME_LIMIT = 3600  # 1小时
 
+CSRF_TRUSTED_ORIGINS = ['http://202.193.59.57','http://127.0.0.1']
+
 #关闭CSRF
 CSRF_COOKIE_SECURE = False
 CSRF_COOKIE_HTTPONLY = False
+
+# 允许所有来源的请求
+CORS_ORIGIN_ALLOW_ALL = True
