@@ -38,7 +38,9 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'rest_framework',
     'website',
+    'drf_yasg',
 ]
 
 MIDDLEWARE = [
@@ -142,3 +144,7 @@ CELERY_RESULT_BACKEND = config.CELERY_RESULT_BACKEND
 
 # 定义异步任务的超时时间（单位为秒）
 CELERY_TASK_TIME_LIMIT = 3600  # 1小时
+
+#关闭CSRF
+CSRF_COOKIE_SECURE = False
+CSRF_COOKIE_HTTPONLY = False

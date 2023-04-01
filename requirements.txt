@@ -13,3 +13,4 @@ redis
 eventlet
 django-celery-results
 mysqlclient
+drf-yasg2

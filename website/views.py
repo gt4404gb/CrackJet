@@ -11,10 +11,12 @@ import asyncio
 from django.contrib.auth import authenticate, login
 from django.contrib.auth.forms import UserCreationForm
 from django.shortcuts import render, redirect
-from django.views.generic import View
-from django.views.decorators.csrf import csrf_exempt
-from django.core.cache import cache
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from rest_framework.decorators import api_view
 from django.contrib.auth.mixins import LoginRequiredMixin
+from drf_yasg.utils import swagger_auto_schema
+from drf_yasg import openapi
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'scan')))
 from scan.checkRun import checkRun
@@ -25,35 +27,98 @@ def hello(request):
     return HttpResponse("Hello world ! ")
 
 
-def login_view(request):
-    if request.method == 'POST':
-        username = request.POST['username']
-        password = request.POST['password']
+class login_view(APIView):
+    @swagger_auto_schema(
+        operation_description="用户登录",
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            required=['username', 'password'],
+            properties={
+                'username': openapi.Schema(type=openapi.TYPE_STRING, description="用户名"),
+                'password': openapi.Schema(type=openapi.TYPE_STRING, description="密码")
+            }
+        ),
+        responses={
+            200: openapi.Response(
+                description="成功",
+                examples={
+                    "application/json": {
+                        "errmsg": "ok"
+                    }
+                }
+            ),
+            401: "Invalid username or password.",
+        }
+    )
+    def post(self, request):
+        data = request.data
+        username = data['username']
+        password = data['password']
         user = authenticate(request, username=username, password=password)
         if user is not None:
             login(request, user)
-            return redirect('/')
+            return Response({'errmsg': 'ok'})
         else:
             return render(request, 'login.html', {'error': 'Invalid username or password.'})
-    else:
+    def get(self, request):
         return render(request, 'login.html')
 
-
-def register_view(request):
-    if request.method == 'POST':
-        form = UserCreationForm(request.POST)
+class register_view(APIView):
+    @swagger_auto_schema(
+        operation_description="用户注册",
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            required=['username', 'password'],
+            properties={
+                'username': openapi.Schema(type=openapi.TYPE_STRING, description="用户名"),
+                'password': openapi.Schema(type=openapi.TYPE_STRING, description="密码"),
+            }
+        ),
+        responses={
+            200: openapi.Response(
+                description="成功",
+                examples={
+                    "application/json": {
+                        "errmsg": "ok"
+                    }
+                }
+            ),
+            400: "请求错误",
+        }
+    )
+    def post(self, request):
+        data = request.data
+        form = UserCreationForm(data)
         if form.is_valid():
             form.save()
             username = form.cleaned_data.get('username')
-            raw_password = form.cleaned_data.get('password1')
+            raw_password = form.cleaned_data.get('password')
             user = authenticate(username=username, password=raw_password)
             login(request, user)
-            return redirect('/')
-    else:
+            return Response({'errmsg': 'ok'})
+        else:
+            errors = form.errors
+            return Response({'error': errors})
+    def get(self, request):
         form = UserCreationForm()
-    return render(request, 'register.html', {'form': form})
+        return render(request, 'register.html', {'form': form})
 
-class logout_View(LoginRequiredMixin, View):
+#登出
+class logout_View(LoginRequiredMixin, APIView):
+    @swagger_auto_schema(
+        operation_description="用户登出",
+        responses={
+            200: openapi.Response(
+                description="成功",
+                examples={
+                    "application/json": {
+                        "errmsg": "ok"
+                    }
+                }
+            ),
+            401: "未认证",
+        }
+    )
     def get(self, request):
         # 清理session（redis中的会话，请求对象cookie中的sessionid）-request.session.flush()
          #logout(request=request)
@@ -67,11 +132,36 @@ class logout_View(LoginRequiredMixin, View):
 
 
 #新建项目（扫描文件夹）
-class create_project(LoginRequiredMixin,View):
-    def get(self,request):
+class create_project(LoginRequiredMixin,APIView):
+    @swagger_auto_schema(
+        operation_description="新建项目（扫描文件夹）",
+        manual_parameters=[
+            openapi.Parameter(
+                'project_name', openapi.IN_QUERY, description="项目名称",
+                type=openapi.TYPE_STRING, required=True
+            ),
+        ],
+        responses={
+            200: openapi.Response(
+                description="查询结果",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'status': openapi.Schema(type=openapi.TYPE_STRING, description="创建状态"),
+                        'task_id': openapi.Schema(type=openapi.TYPE_STRING, description="项目ID")
+                    }
+                )
+            ),
+            400: "请求错误",
+            401: "未认证",
+            404: "任务ID不存在",
+        }
+    )
+    def post(self,request):
+        data = request.data
         try:
             # 从请求中获取项目名称
-            project_name = request.GET.get('project_name')
+            project_name = data.get('project_name')
             # 创建项目
             project = models.Project.objects.create(projectname=project_name)
             # 返回创建状态和创建的任务id
@@ -82,7 +172,30 @@ class create_project(LoginRequiredMixin,View):
             return JsonResponse({'status': 'failed'})
 
 #查询所有项目
-class search_all_project(LoginRequiredMixin,View):
+class search_all_project(LoginRequiredMixin, APIView):
+    @swagger_auto_schema(
+        operation_description="查询所有项目",
+        responses={
+            200: openapi.Response(
+                description="查询结果",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'projects': openapi.Schema(type=openapi.TYPE_ARRAY, description="项目列表", items=openapi.Schema(
+                            type=openapi.TYPE_OBJECT,
+                            properties={
+                                'project_id': openapi.Schema(type=openapi.TYPE_STRING, description="项目ID"),
+                                'project_name': openapi.Schema(type=openapi.TYPE_STRING, description="项目名称")
+                            }
+                        ))
+                    }
+                )
+            ),
+            400: "请求错误",
+            401: "未认证",
+            404: "任务ID不存在",
+        }
+    )
     def get(self,request):
         # 从数据库中获取所有项目
         projects = models.Project.objects.all()
@@ -92,12 +205,41 @@ class search_all_project(LoginRequiredMixin,View):
         return JsonResponse({'projects': project_list})
 
 #新建扫描URL
-class create_scan(LoginRequiredMixin,View):
-    def get(self,request):
+class create_scan(LoginRequiredMixin, APIView):
+    @swagger_auto_schema(
+        operation_description="新建扫描URL",
+        manual_parameters=[
+            openapi.Parameter(
+                'project_id', openapi.IN_QUERY, description="项目ID",
+                type=openapi.TYPE_STRING, required=True
+            ),
+            openapi.Parameter(
+                'website', openapi.IN_QUERY, description="扫描网址URL",
+                type=openapi.TYPE_STRING, required=True
+            ),
+        ],
+        responses={
+            200: openapi.Response(
+                description="查询结果",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'status': openapi.Schema(type=openapi.TYPE_STRING, description="任务状态"),
+                        'UID': openapi.Schema(type=openapi.TYPE_STRING, description="任务ID")
+                    }
+                )
+            ),
+            400: "请求错误",
+            401: "未认证",
+            404: "任务ID不存在",
+        }
+    )
+    def post(self,request):
+        data = request.data
         try:
             # 从请求中获取项目id和网址
-            project_id = request.GET.get('project_id')
-            website = request.GET.get('website')
+            project_id = data.get('project_id')
+            website = data.get('website')
             # 创建扫描URL
             task = models.Website.objects.create(site=website, project_id=project_id,status="INIT",is_scan=0,is_weak=0)
             # 返回创建状态和创建的任务id
@@ -115,10 +257,37 @@ class create_scan(LoginRequiredMixin,View):
             return JsonResponse({'status': 'failed'})
 
 
+
 #在数据库中查询扫描状态
-class scan_status(LoginRequiredMixin,View):
-    def get(self, request):
-        task_id = request.GET.get('task_id')
+class scan_status(LoginRequiredMixin, APIView):
+    @swagger_auto_schema(
+        operation_description="查询网站扫描状态",
+        manual_parameters=[
+            openapi.Parameter(
+                'task_id', openapi.IN_QUERY, description="任务ID",
+                type=openapi.TYPE_STRING, required=True
+            ),
+        ],
+        responses={
+            200: openapi.Response(
+                description="查询结果",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'status': openapi.Schema(type=openapi.TYPE_STRING, description="任务状态"),
+                        'username': openapi.Schema(type=openapi.TYPE_STRING, description="爆破成功的用户名"),
+                        'password': openapi.Schema(type=openapi.TYPE_STRING, description="爆破成功的密码")
+                    }
+                )
+            ),
+            400: "请求错误",
+            401: "未认证",
+            404: "任务ID不存在",
+        }
+    )
+    def post(self, request):
+        data = request.data
+        task_id = data.get('task_id')
         # 获取任务执行结果
         task = models.Website.objects.get(UID=task_id)
         if task:
@@ -136,18 +305,52 @@ class scan_status(LoginRequiredMixin,View):
             return JsonResponse({'error': 'task_id is invalid'})
 
 #查询数据库中project所有的webstie记录
-class search_all_website(LoginRequiredMixin,View):
-    def get(self,request):
+class search_all_website(LoginRequiredMixin, APIView):
+    @swagger_auto_schema(
+        operation_description="查询数据库中project所有的webstie记录",
+        manual_parameters=[
+            openapi.Parameter(
+                'project_id', openapi.IN_QUERY, description="项目ID",
+                type=openapi.TYPE_STRING, required=True
+            ),
+        ],
+        responses={
+            200: openapi.Response(
+                description="查询结果",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'websites': openapi.Schema(type=openapi.TYPE_ARRAY, description="网址列表", items=openapi.Schema(
+                            type=openapi.TYPE_OBJECT,
+                            properties={
+                                'UID': openapi.Schema(type=openapi.TYPE_STRING, description="任务ID"),
+                                'site': openapi.Schema(type=openapi.TYPE_STRING, description="网址"),
+                                'status': openapi.Schema(type=openapi.TYPE_STRING, description="任务状态"),
+                                'is_scan': openapi.Schema(type=openapi.TYPE_INTEGER, description="是否扫描"),
+                                'is_weak': openapi.Schema(type=openapi.TYPE_INTEGER, description="是否弱口令")
+                            }
+                        ))
+                    }
+                )
+            ),
+            400: "请求错误",
+            401: "未认证",
+            404: "任务ID不存在",
+        }
+    )
+    def post(self,request):
+        data = request.data
         # 从请求中获取项目id
-        project_id = request.GET.get('project_id')
+        project_id = data.get('project_id')
         # 从数据库中获取该项目下的所有网址
         websites = models.Website.objects.filter(project_id=project_id)
         # 构造返回的json格式数据
         website_list = [{'UID': website.UID, 'site': website.site, 'status': website.status, 'is_scan': website.is_scan, 'is_weak': website.is_weak} for website in websites]
         return JsonResponse({'websites': website_list})
-            
+
+#—————————————————以下接口已弃用———————————————————————————————
 #单个URL扫描请求
-class start_scan(LoginRequiredMixin,View):
+class start_scan(LoginRequiredMixin, APIView):
     def get(self,request):
         website = request.GET.get('website')
         # 异步启动扫描任务
@@ -157,7 +360,7 @@ class start_scan(LoginRequiredMixin,View):
         return JsonResponse({'task_id': result.id})
 
 #干脆不要从celery读状态了，直接去数据库读状态
-class get_scan_result(LoginRequiredMixin,View):
+class get_scan_result(LoginRequiredMixin, APIView):
     def get(self,request):
 
         task_id = request.GET.get('task_id')

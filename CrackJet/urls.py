@@ -17,13 +17,25 @@ from django.contrib import admin
 from django.urls import re_path, path
 from django.contrib.auth.decorators import login_required
 from website import views
+# swagger
+from rest_framework import permissions
+from drf_yasg.views import get_schema_view
+from drf_yasg import openapi
+
+schema_view = get_schema_view(
+    openapi.Info(
+        title="CrackJet API",
+        default_version="v1",
+    ),
+    public=True,
+)
 
 
 urlpatterns = [
     path('', views.hello, name='hello'),
     path('hello/', views.hello, name='hello'),
-    path('accounts/login/', views.login_view, name='login'),
-    path('accounts/register/', views.register_view, name='register'),
+    path('accounts/login/', views.login_view.as_view(), name='login'),
+    path('accounts/register/', views.register_view.as_view(), name='register'),
     path('accounts/logout/', views.logout_View.as_view(), name='logout'),
     path('admin/', admin.site.urls),
     #path('crackjet/start_scan/',  views.start_scan.as_view(), name='start_scan'),
@@ -33,4 +45,10 @@ urlpatterns = [
     path('crackjet/search_all_website/', views.search_all_website.as_view(), name='search_all_website'),
     path('crackjet/create_scan/', views.create_scan.as_view(), name='create_scan'),
     path('crackjet/scan_status/', views.scan_status.as_view(), name='scan_status'),
+]
+
+urlpatterns += [
+    re_path(r"^swagger(?P<format>\.json|\.yaml)$", schema_view.without_ui(cache_timeout=0), name="schema-json"),
+    re_path(r"^swagger/$", schema_view.with_ui("swagger", cache_timeout=0), name="schema-swagger-ui"),
+    re_path(r"^redoc/$", schema_view.with_ui("redoc", cache_timeout=0), name="schema-redoc"),
 ]
