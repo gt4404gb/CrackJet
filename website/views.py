@@ -12,6 +12,11 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.authentication import TokenAuthentication
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from rest_framework_simplejwt.views import TokenObtainPairView
+from rest_framework_simplejwt.authentication import JWTAuthentication
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import AllowAny
 from django.contrib.auth.mixins import LoginRequiredMixin
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
@@ -23,6 +28,19 @@ from website import models
 
 def hello(request):
     return HttpResponse("Hello world ! ")
+
+
+class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
+    @classmethod
+    def get_token(cls, user):
+        token = super().get_token(user)
+        # add custom claims
+        token['email'] = user.email
+        return token
+
+class CustomTokenObtainPairView(TokenObtainPairView):
+    serializer_class = CustomTokenObtainPairSerializer
+    permission_classes = [AllowAny]
 
 
 class login_view(APIView):
@@ -88,6 +106,7 @@ class login_view(APIView):
             print(e)
             return JsonResponse({'error': 'Invalid request.'}, status=status.HTTP_400_BAD_REQUEST)
 
+
 class register_view(APIView):
     @swagger_auto_schema(
         operation_description="用户注册",
@@ -104,7 +123,7 @@ class register_view(APIView):
                 description="成功",
                 examples={
                     "application/json": {
-                        "errmsg": "ok"
+                        "msg": "ok"
                     }
                 }
             ),
@@ -112,7 +131,7 @@ class register_view(APIView):
                 description="请求错误",
                 examples={
                     "application/json": {
-                        "error": "Invalid request."
+                        "errmsg": "Invalid request."
                     }
                 }
             ),
@@ -128,13 +147,13 @@ class register_view(APIView):
                 raw_password = form.cleaned_data.get('password')
                 user = authenticate(username=username, password=raw_password)
                 login(request, user)
-                return JsonResponse({'errmsg': 'ok'})
+                return JsonResponse({'msg': 'ok'})
             else:
                 errors = form.errors
-                return JsonResponse({'error': errors}, status=status.HTTP_400_BAD_REQUEST)
+                return JsonResponse({'errmsg': errors}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             print(e)
-            return JsonResponse({'error': 'Invalid request.'}, status=status.HTTP_400_BAD_REQUEST)
+            return JsonResponse({'errmsg': 'Invalid request.'}, status=status.HTTP_400_BAD_REQUEST)
 
     def get(self, request):
         try:
@@ -142,10 +161,12 @@ class register_view(APIView):
             return render(request, 'register.html', {'form': form})
         except Exception as e:
             print(e)
-            return JsonResponse({'error': 'Invalid request.'}, status=status.HTTP_400_BAD_REQUEST)
+            return JsonResponse({'errmsg': 'Invalid request.'}, status=status.HTTP_400_BAD_REQUEST)
 
 #登出
 class logout_View(LoginRequiredMixin, APIView):
+    #authentication_classes = [JWTAuthentication]
+    #permission_classes = [IsAuthenticated]
     @swagger_auto_schema(
         operation_description="用户登出",
         responses={
@@ -153,7 +174,7 @@ class logout_View(LoginRequiredMixin, APIView):
                 description="成功",
                 examples={
                     "application/json": {
-                        "errmsg": "ok"
+                        "msg": "ok"
                     }
                 }
             ),
@@ -161,18 +182,31 @@ class logout_View(LoginRequiredMixin, APIView):
                 description="请求错误",
                 examples={
                     "application/json": {
-                        "error": "Invalid request."
+                        "errmsg": "Invalid request."
+                    }
+                }
+            ),
+            401: openapi.Response(
+                description="未认证",
+                examples={
+                    "application/json": {
+                        "errmsg": "Authentication credentials were not provided."
                     }
                 }
             ),
         }
     )
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return JsonResponse({'errmsg': 'Authentication credentials were not provided.'}, status=status.HTTP_401_UNAUTHORIZED)
+        return super().dispatch(request, *args, **kwargs)
+
     def get(self, request):
         try:
             # 清理session（redis中的会话，请求对象cookie中的sessionid）-request.session.flush()
              #logout(request=request)
             response = JsonResponse({
-                'errmsg': 'ok'
+                'msg': 'ok'
             })
             # 可以删除指定cookie
             request.session.clear()
@@ -180,7 +214,7 @@ class logout_View(LoginRequiredMixin, APIView):
             return response
         except Exception as e:
             print(e)
-            return JsonResponse({'error': 'Invalid request.'}, status=status.HTTP_400_BAD_REQUEST)
+            return JsonResponse({'errmsg': 'Invalid request.'}, status=status.HTTP_400_BAD_REQUEST)
 
 
 #新建项目（扫描文件夹）
@@ -208,14 +242,27 @@ class create_project(LoginRequiredMixin, APIView):
                 description="请求错误",
                 examples={
                     "application/json": {
-                        "error": "Invalid request."
+                        "errmsg": "error",
+                        'status': 'failed'
                     }
                 }
             ),
-            401: "未认证",
+            401: openapi.Response(
+                description="未认证",
+                examples={
+                    "application/json": {
+                        "errmsg": "Authentication credentials were not provided."
+                    }
+                }
+            ),
             404: "任务ID不存在",
         }
     )
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return JsonResponse({'errmsg': 'Authentication credentials were not provided.'}, status=status.HTTP_401_UNAUTHORIZED)
+        return super().dispatch(request, *args, **kwargs)
+
     def post(self,request):
         data = request.data
         try:
@@ -228,7 +275,7 @@ class create_project(LoginRequiredMixin, APIView):
 
         except Exception as e:
             print(e)
-            return JsonResponse({'status': 'failed'}, status=status.HTTP_400_BAD_REQUEST)
+            return JsonResponse({'errmsg':e,'status': 'failed'}, status=status.HTTP_400_BAD_REQUEST)
 
 #查询所有项目
 class search_all_project(LoginRequiredMixin, APIView):
@@ -254,14 +301,26 @@ class search_all_project(LoginRequiredMixin, APIView):
                 description="请求错误",
                 examples={
                     "application/json": {
-                        "error": "Invalid request."
+                        "errmsg": "Invalid request."
                     }
                 }
             ),
-            401: "未认证",
+            401: openapi.Response(
+                description="未认证",
+                examples={
+                    "application/json": {
+                        "errmsg": "Authentication credentials were not provided."
+                    }
+                }
+            ),
             404: "任务ID不存在",
         }
     )
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return JsonResponse({'errmsg': 'Authentication credentials were not provided.'}, status=status.HTTP_401_UNAUTHORIZED)
+        return super().dispatch(request, *args, **kwargs)
+
     def get(self,request):
         try:
             # 从数据库中获取所有项目
@@ -272,7 +331,7 @@ class search_all_project(LoginRequiredMixin, APIView):
             return JsonResponse({'projects': project_list})
         except Exception as e:
             print(e)
-            return JsonResponse({'error': 'Invalid request.'}, status=status.HTTP_400_BAD_REQUEST)
+            return JsonResponse({'errmsg': 'Invalid request.'}, status=status.HTTP_400_BAD_REQUEST)
 
 #新建扫描URL
 class create_scan(LoginRequiredMixin, APIView):
@@ -307,9 +366,21 @@ class create_scan(LoginRequiredMixin, APIView):
                     }
                 }
             ),
-            401: "未认证",
+            401: openapi.Response(
+                description="未认证",
+                examples={
+                    "application/json": {
+                        "errmsg": "Authentication credentials were not provided."
+                    }
+                }
+            ),
         }
     )
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return JsonResponse({'errmsg': 'Authentication credentials were not provided.'}, status=status.HTTP_401_UNAUTHORIZED)
+        return super().dispatch(request, *args, **kwargs)
+
     def post(self,request):
         try:
             data = request.data
@@ -329,7 +400,7 @@ class create_scan(LoginRequiredMixin, APIView):
             return JsonResponse({'status': 'success', 'UID': task.UID})
         except Exception as e:
             print(e)
-            return JsonResponse({'status': 'failed'}, status=status.HTTP_400_BAD_REQUEST)
+            return JsonResponse({'errmsg': e, 'status': 'failed'}, status=status.HTTP_400_BAD_REQUEST)
 
 
 #从txt文件中读取多个扫描URL，依次加入扫描
@@ -357,10 +428,22 @@ class create_scan_file(LoginRequiredMixin, APIView):
                 )
             ),
             400: "请求错误",
-            401: "未认证",
+            401: openapi.Response(
+                description="未认证",
+                examples={
+                    "application/json": {
+                        "errmsg": "Authentication credentials were not provided."
+                    }
+                }
+            ),
             404: "任务ID不存在",
         }
     )
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return JsonResponse({'errmsg': 'Authentication credentials were not provided.'}, status=status.HTTP_401_UNAUTHORIZED)
+        return super().dispatch(request, *args, **kwargs)
+
     def post(self, request):
         try:
             # 从请求中获取项目id和txt文件路径
@@ -384,7 +467,7 @@ class create_scan_file(LoginRequiredMixin, APIView):
             return JsonResponse({'status': 'success'})
         except Exception as e:
             print(e)
-            return JsonResponse({'status': 'failed'}, status=status.HTTP_400_BAD_REQUEST)
+            return JsonResponse({'errmsg': e,'status': 'failed'}, status=status.HTTP_400_BAD_REQUEST)
 
 
 #在数据库中查询扫描状态
@@ -413,14 +496,26 @@ class scan_status(LoginRequiredMixin, APIView):
                 description="请求错误",
                 examples={
                     "application/json": {
-                        "error": "Invalid request."
+                        "errmsg": "Invalid request."
                     }
                 }
             ),
-            401: "未认证",
+            401: openapi.Response(
+                description="未认证",
+                examples={
+                    "application/json": {
+                        "errmsg": "Authentication credentials were not provided."
+                    }
+                }
+            ),
             404: "任务ID不存在",
         }
     )
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return JsonResponse({'errmsg': 'Authentication credentials were not provided.'}, status=status.HTTP_401_UNAUTHORIZED)
+        return super().dispatch(request, *args, **kwargs)
+
     def post(self, request):
         try:
             data = request.data
@@ -439,10 +534,10 @@ class scan_status(LoginRequiredMixin, APIView):
                 else:
                     return JsonResponse({'status': result})
             else:
-                return JsonResponse({'error': 'task_id is invalid'}, status=status.HTTP_400_BAD_REQUEST)
+                return JsonResponse({'errmsg': 'task_id is invalid'}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             print(e)
-            return JsonResponse({'error': 'Invalid request.'}, status=status.HTTP_400_BAD_REQUEST)
+            return JsonResponse({'errmsg': 'Invalid request.'}, status=status.HTTP_400_BAD_REQUEST)
 
 #查询数据库中project所有的webstie记录
 class search_all_website(LoginRequiredMixin, APIView):
@@ -477,14 +572,26 @@ class search_all_website(LoginRequiredMixin, APIView):
                 description="请求错误",
                 examples={
                     "application/json": {
-                        "error": "Invalid request."
+                        "errmsg": "Invalid request."
                     }
                 }
             ),
-            401: "未认证",
+            401: openapi.Response(
+                description="未认证",
+                examples={
+                    "application/json": {
+                        "errmsg": "Authentication credentials were not provided."
+                    }
+                }
+            ),
             404: "任务ID不存在",
         }
     )
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return JsonResponse({'errmsg': 'Authentication credentials were not provided.'}, status=status.HTTP_401_UNAUTHORIZED)
+        return super().dispatch(request, *args, **kwargs)
+
     def post(self,request):
         try:
             data = request.data
@@ -497,7 +604,7 @@ class search_all_website(LoginRequiredMixin, APIView):
             return JsonResponse({'websites': website_list})
         except Exception as e:
             print(e)
-            return JsonResponse({'error': 'Invalid request.'}, status=status.HTTP_400_BAD_REQUEST)
+            return JsonResponse({'errmsg': 'Invalid request.'}, status=status.HTTP_400_BAD_REQUEST)
 
 
 #删除指定的url扫描记录
@@ -521,10 +628,22 @@ class delete_website(LoginRequiredMixin, APIView):
                 )
             ),
             400: "请求错误",
-            401: "未认证",
+            401: openapi.Response(
+                description="未认证",
+                examples={
+                    "application/json": {
+                        "errmsg": "Authentication credentials were not provided."
+                    }
+                }
+            ),
             404: "任务ID不存在",
         }
     )
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return JsonResponse({'errmsg': 'Authentication credentials were not provided.'}, status=status.HTTP_401_UNAUTHORIZED)
+        return super().dispatch(request, *args, **kwargs)
+
     def delete(self,request):
         try:
             data = request.data
@@ -537,7 +656,7 @@ class delete_website(LoginRequiredMixin, APIView):
             return JsonResponse({'status': 'success'})
         except Exception as e:
             print(e)
-            return JsonResponse({'error': 'Invalid request.'}, status=status.HTTP_400_BAD_REQUEST)
+            return JsonResponse({'errmsg': 'Invalid request.'}, status=status.HTTP_400_BAD_REQUEST)
 
             
 #—————————————————以下接口已弃用———————————————————————————————
@@ -569,4 +688,4 @@ class get_scan_result(LoginRequiredMixin, APIView):
                 # 如果任务尚未完成，则返回等待消息
                 return JsonResponse({'status': 'waiting'})
         else:
-            return JsonResponse({'error': 'task_id is required'})
+            return JsonResponse({'errmsg': 'task_id is required'})
