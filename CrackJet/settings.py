@@ -47,11 +47,11 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
-    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
+    #'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
@@ -156,11 +156,13 @@ CELERY_RESULT_BACKEND = config.CELERY_RESULT_BACKEND
 # 定义异步任务的超时时间（单位为秒）
 CELERY_TASK_TIME_LIMIT = 3600  # 1小时
 
-CSRF_TRUSTED_ORIGINS = ['http://202.193.59.57','http://127.0.0.1']
+CSRF_TRUSTED_ORIGINS = ['http://202.193.59.57','http://127.0.0.1','http://localhost:3000','http://localhost']
 
 #关闭CSRF
 CSRF_COOKIE_SECURE = False
 CSRF_COOKIE_HTTPONLY = False
-
+CSRF_COOKIE_SAMESITE = False
 # 允许所有来源的请求
 CORS_ORIGIN_ALLOW_ALL = True
+CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_HEADERS = ('*')
