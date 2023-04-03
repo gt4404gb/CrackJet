@@ -577,10 +577,11 @@ class search_all_website(LoginRequiredMixin, APIView):
                             type=openapi.TYPE_OBJECT,
                             properties={
                                 'UID': openapi.Schema(type=openapi.TYPE_STRING, description="任务ID"),
-                                'site': openapi.Schema(type=openapi.TYPE_STRING, description="网址"),
-                                'status': openapi.Schema(type=openapi.TYPE_STRING, description="任务状态"),
-                                'is_scan': openapi.Schema(type=openapi.TYPE_INTEGER, description="是否扫描"),
-                                'is_weak': openapi.Schema(type=openapi.TYPE_INTEGER, description="是否弱口令")
+                                'address': openapi.Schema(type=openapi.TYPE_STRING, description="网址"),
+                                'scanStatus': openapi.Schema(type=openapi.TYPE_STRING, description="任务状态"),
+                                'loginStatus': openapi.Schema(type=openapi.TYPE_INTEGER, description="是否弱口令"),
+                                'username': openapi.Schema(type=openapi.TYPE_STRING, description="用户名"),
+                                'password': openapi.Schema(type=openapi.TYPE_STRING, description="密码"),
                             }
                         ))
                     }
@@ -614,7 +615,7 @@ class search_all_website(LoginRequiredMixin, APIView):
             # 从数据库中获取该项目下的所有网址
             websites = models.Website.objects.filter(project_id=project_id)
             # 构造返回的json格式数据
-            website_list = [{'UID': website.UID, 'site': website.site, 'status': website.status, 'is_scan': website.is_scan, 'is_weak': website.is_weak} for website in websites]
+            website_list = [{'UID': website.UID, 'address': website.site, 'scanStatus': website.status, 'loginStatus': website.is_weak, 'username': website.username, 'password': website.password} for website in websites]
             return JsonResponse({'code': status.HTTP_200_OK, 'websites': website_list})
         except Exception as e:
             print(e)

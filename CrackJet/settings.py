@@ -52,6 +52,7 @@ MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     #'django.middleware.csrf.CsrfViewMiddleware',
+    'CrackJet.middleware.NotUseCsrfTokenMiddlewareMixin',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
@@ -88,14 +89,6 @@ WSGI_APPLICATION = 'CrackJet.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/4.1/ref/settings/#databases
-'''
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
-}
-'''
 
 DATABASES = {
     'default': {
@@ -156,7 +149,7 @@ CELERY_RESULT_BACKEND = config.CELERY_RESULT_BACKEND
 # 定义异步任务的超时时间（单位为秒）
 CELERY_TASK_TIME_LIMIT = 3600  # 1小时
 
-CSRF_TRUSTED_ORIGINS = ['http://202.193.59.57','http://127.0.0.1','http://localhost:3000','http://localhost']
+CSRF_TRUSTED_ORIGINS = ['http://202.193.59.57','http://127.0.0.1','http://localhost:3000','http://localhost','http://202.193.59.57:8000',]
 
 #关闭CSRF
 CSRF_COOKIE_SECURE = False
