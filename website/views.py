@@ -578,7 +578,7 @@ class search_all_website(LoginRequiredMixin, APIView):
                             properties={
                                 'UID': openapi.Schema(type=openapi.TYPE_STRING, description="任务ID"),
                                 'address': openapi.Schema(type=openapi.TYPE_STRING, description="网址"),
-                                'scanStatus': openapi.Schema(type=openapi.TYPE_STRING, description="任务状态"),
+                                'scanStatus': openapi.Schema(type=openapi.TYPE_STRING, description="任务状态,可能的值为INIT（初始化）、CRAWLING（页面爬取中）、CRACKING（账号爆破中）、FINISH（已完成，未发现弱口令）、SUCCESS（已完成、发现弱口令）、ERROR（扫描错误）"),
                                 'loginStatus': openapi.Schema(type=openapi.TYPE_INTEGER, description="是否弱口令"),
                                 'username': openapi.Schema(type=openapi.TYPE_STRING, description="用户名"),
                                 'password': openapi.Schema(type=openapi.TYPE_STRING, description="密码"),
@@ -615,7 +615,13 @@ class search_all_website(LoginRequiredMixin, APIView):
             # 从数据库中获取该项目下的所有网址
             websites = models.Website.objects.filter(project_id=project_id)
             # 构造返回的json格式数据
-            website_list = [{'UID': website.UID, 'address': website.site, 'scanStatus': website.status, 'loginStatus': website.is_weak, 'username': website.username, 'password': website.password} for website in websites]
+            website_list = [{'UID': website.UID,
+                             'address': website.site,
+                             'scanStatus': website.status if website.status is not None else '',
+                             'loginStatus': str(website.is_weak) if website.is_weak is not None else '0',
+                             'username': website.username if website.username is not None else '',
+                             'password': website.password if website.password is not None else ''
+                             } for website in websites]
             return JsonResponse({'code': status.HTTP_200_OK, 'websites': website_list})
         except Exception as e:
             print(e)
