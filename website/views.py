@@ -280,12 +280,82 @@ class create_project(LoginRequiredMixin, APIView):
             project_name = data.get('project_name')
             # 创建项目
             project = models.Project.objects.create(projectname=project_name)
+            project.status = "INIT"
+            project.save()
+
+            if project_name == None or project_name == '':
+                project_name = '项目'+ str(project.ID)
+                project.projectname = project_name
+                project.save()
             # 返回创建状态和创建的任务id
             return JsonResponse({'code': status.HTTP_200_OK, 'status': 'success', 'task_id': project.ID})
 
         except Exception as e:
             print(e)
             return JsonResponse({'code': status.HTTP_400_BAD_REQUEST, 'errmsg':e,'status': 'failed'}, status=status.HTTP_400_BAD_REQUEST)
+
+#删除项目
+class delete_project(LoginRequiredMixin, APIView):
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return JsonResponse({'code': status.HTTP_401_UNAUTHORIZED, 'errmsg': 'Authentication credentials were not provided.'}, status=status.HTTP_401_UNAUTHORIZED)
+        return super().dispatch(request, *args, **kwargs)
+
+    @swagger_auto_schema(
+        operation_description="删除项目",
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            required=['project_id'],
+            properties={
+                'project_id': openapi.Schema(type=openapi.TYPE_STRING, description="项目id"),
+            }
+        ),
+        responses={
+            200: openapi.Response(
+                description="查询结果",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'status': openapi.Schema(type=openapi.TYPE_STRING, description="删除状态")
+                    }
+                )
+            ),
+            400: openapi.Response(
+                description="请求错误",
+                examples={
+                    "application/json": {
+                        "errmsg": "error",
+                        'status': 'failed'
+                    }
+                }
+            ),
+            401: openapi.Response(
+                description="未认证",
+                examples={
+                    "application/json": {
+                        "errmsg": "Authentication credentials were not provided."
+                    }
+                }
+            ),
+            404: "任务ID不存在",
+        }
+    )
+    def delete(self,request):
+        try:
+            data = request.data
+            # 从请求中获取任务id
+            ID = data.get('project_id')
+            # 从数据库中删除该任务
+            project = models.Project.objects.get(ID=ID)
+            # 将项目状态设置为 "DELETE"
+            project.status = "DELETE"
+            project.save()
+            # 返回删除成功状态
+            return JsonResponse({'code': status.HTTP_200_OK, 'status': 'success'})
+        except Exception as e:
+            print(e)
+            return JsonResponse({'code': status.HTTP_400_BAD_REQUEST, 'errmsg': 'Invalid request.'}, status=status.HTTP_400_BAD_REQUEST)
+
 
 #查询所有项目
 class search_all_project(LoginRequiredMixin, APIView):
@@ -333,8 +403,8 @@ class search_all_project(LoginRequiredMixin, APIView):
     )
     def get(self,request):
         try:
-            # 从数据库中获取所有项目
-            projects = models.Project.objects.all()
+            # 从数据库中获取所有项目，排除status为DELETE的项目
+            projects = models.Project.objects.exclude(status='DELETE')
             # 构造返回的json格式数据
             project_list = [{'project_id': project.ID, 'project_name': project.projectname} for project in projects]
             # 返回json格式数据
@@ -396,7 +466,7 @@ class create_scan(LoginRequiredMixin, APIView):
             project_id = data.get('project_id')
             website = data.get('website')
             # 创建扫描URL
-            task = models.Website.objects.create(site=website, project_id=project_id,status="INIT",is_scan=0,is_weak=0)
+            task = models.Website.objects.create(site=website, project_id=project_id,status="INIT",is_scan=0)
             # 返回创建状态和创建的任务id
             # 将任务的数据库 id 作为参数传递给 Celery
             celery_task = checkRun.apply_async(args=(website, task.UID))
@@ -492,9 +562,9 @@ class scan_status(LoginRequiredMixin, APIView):
         operation_description="查询网站扫描状态",
         request_body=openapi.Schema(
             type=openapi.TYPE_OBJECT,
-            required=['task_id'],
+            required=['UID'],
             properties={
-                'task_id': openapi.Schema(type=openapi.TYPE_STRING, description="网站id"),
+                'UID': openapi.Schema(type=openapi.TYPE_STRING, description="网站id"),
             }
         ),
         responses={
@@ -531,9 +601,10 @@ class scan_status(LoginRequiredMixin, APIView):
     def post(self, request):
         try:
             data = request.data
-            task_id = data.get('task_id')
+            raw_UID = data.get('UID')
+            UID = raw_UID.replace('-', '')
             # 获取任务执行结果
-            task = models.Website.objects.get(UID=task_id)
+            task = models.Website.objects.get(UID=UID)
             if task:
                 result = task.status
                 if result == "SUCCESS":
@@ -618,7 +689,7 @@ class search_all_website(LoginRequiredMixin, APIView):
             website_list = [{'UID': website.UID,
                              'address': website.site,
                              'scanStatus': website.status if website.status is not None else '',
-                             'loginStatus': str(website.is_weak) if website.is_weak is not None else '0',
+                             'loginStatus': str(website.is_weak) if website.is_weak is not None else '',
                              'username': website.username if website.username is not None else '',
                              'password': website.password if website.password is not None else ''
                              } for website in websites]
@@ -670,9 +741,12 @@ class delete_website(LoginRequiredMixin, APIView):
         try:
             data = request.data
             # 从请求中获取任务id
-            UID = data.get('UID')
+            raw_UID = data.get('UID')
+            UID = raw_UID.replace('-','')
             # 从数据库中删除该任务
             website = models.Website.objects.get(UID=UID)
+            print(UID)
+            print(website)
             website.delete()
             # 返回删除成功状态
             return JsonResponse({'code': status.HTTP_200_OK, 'status': 'success'})

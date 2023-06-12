@@ -14,11 +14,11 @@
 
 `python manage.py makemigrations （生成迁移文件）`
 
-`sudo python manage.py migrate （更新数据库，完成迁移）`
+`python manage.py migrate （更新数据库，完成迁移）`
 
 2、在根目录执行
 
-`celery -A celery_main worker -l info -P eventlet`
+`celery -A celery_main worker -l info -P eventlet -c 2`
 
 创建异步服务器
 
